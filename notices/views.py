@@ -7,8 +7,10 @@ from notices.models import Category, Notice
 from notices.serializers import NoticeSerializer, NoticeListSerialzer, CategorySerializer
 from crawlers import crawler
 
+
 sched = BackgroundScheduler()
-sched.add_job(crawler.crawl_soft, 'cron', minute='0')
+sched.add_job(crawler.Soft().crawl, 'interval', seconds=60)
+sched.add_job(crawler.Ces().crawl, 'interval', seconds=60)
 sched.start()
 
 
