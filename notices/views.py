@@ -1,8 +1,15 @@
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 
+from apscheduler.schedulers.background import BackgroundScheduler
+
 from notices.models import Category, Notice
 from notices.serializers import NoticeSerializer, NoticeListSerialzer, CategorySerializer
+from crawlers import crawler
+
+sched = BackgroundScheduler()
+sched.add_job(crawler.crawl_soft, 'cron', minute='0')
+sched.start()
 
 
 class OneResultSetPagination(PageNumberPagination):
