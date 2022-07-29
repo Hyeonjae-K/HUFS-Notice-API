@@ -13,10 +13,13 @@ def crawl_soft():
     content_selector = '#board-container > div.view > table > tr > td'
     attachment_selector = 'td > a'
     category = Category.objects.get(id=1)
-
     rows = [row for row in BeautifulSoup(requests.get(
         category.url).text, 'html.parser').select(row_selector) if row.span]
     titles = [row.select_one(title_selector).text.strip() for row in rows]
+    new_indexes = [i for i, title in enumerate(
+        titles) if not Notice.objects.filter(title=title)]
+    rows = [rows[i] for i in new_indexes]
+    titles = [titles[i] for i in new_indexes]
     authors = [row.select_one(author_selector).text.strip() for row in rows]
     urls = [url_prefix + '/user/' +
             row.select_one(title_selector).get('href')for row in rows]
@@ -27,14 +30,11 @@ def crawl_soft():
                 for detail_page in detail_pages]
     attachments = [[(attach.text.strip(), url_prefix + attach.get('onclick')[attach.get('onclick').find("'")+1:attach.get('onclick').rfind("'")])
                     for attach in detail_page[2].select(attachment_selector)] for detail_page in detail_pages]
-
-    new_indexes = [i for i, title in enumerate(
-        titles) if not Notice.objects.filter(title=title)]
-    notices = [Notice(title=titles[i], number=numbers[i], author=authors[i],
-                      category=category, content=contents[i], url=urls[i]) for i in new_indexes]
+    notices = [Notice(title=title, number=number, author=author, category=category, content=content, url=url)
+               for title, number, author, content, url in zip(titles, numbers, authors, contents, urls)]
     Notice.objects.bulk_create(notices)
     attachments = list(chain.from_iterable([_getAttachments(
-        notices[i], attachments[i]) for i in new_indexes if attachments[i]]))
+        notice, attachment) for notice, attachment in zip(notices, attachments) if attachment]))
     Attachment.objects.bulk_create(attachments)
 
 
